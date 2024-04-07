@@ -1,6 +1,9 @@
 # copier-php
 
-A Copier template for PHP projects.
+![license](https://img.shields.io/github/license/garrett-he/copier-php)
+![build](https://img.shields.io/github/actions/workflow/status/garrett-he/copier-php/test.yml)
+
+A [Copier][1] template for PHP projects.
 
 ## Quickstart
 
@@ -19,3 +22,5 @@ A Copier template for PHP projects.
 Copyright (C) 2024 Garrett HE <garrett.he@outlook.com>
 
 The BSD 3-Clause License, see [LICENSE](./LICENSE).
+
+[1]: https://github.com/copier-org/copier
