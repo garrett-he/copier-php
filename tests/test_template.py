@@ -1,3 +1,4 @@
+import json
 import random
 
 from chance import chance
@@ -16,15 +17,20 @@ LICENSE_SPEC = {
 
 def generate_copier_answers():
     return {
+        'project_vendor': f'{chance.word()}',
         'project_name': f'{chance.word()}-{chance.word()}',
+        'project_namespace': f'{chance.word()}\\{chance.word()}',
         'project_description': chance.sentence(),
         'project_version': f'{random.randint(0, 10)}.{random.randint(0, 10)}.{random.randint(0, 10)}',
         'project_keywords': f'{chance.word()},{chance.word()},{chance.word()}',
+        'project_type': chance.pickone(['library', 'project', 'metapackage', 'composer-plugin']),
         'copyright_holder_name': chance.name(),
         'copyright_holder_email': chance.email(),
         'copyright_license': chance.pickone(list(LICENSE_SPEC.keys())),
         'copyright_year': str(random.randint(2000, 2024)),
         'vcs_github_path': f'{chance.word()}/{chance.word()}-{chance.word()}'.lower(),
+        'php_version': chance.pickone(['>=8.1', '>=8.2']),
+        'composer_prefer_stable': chance.pickone([True, False]),
     }
 
 
@@ -80,3 +86,30 @@ def test_template_licenses(copie: Copie):
         else:
             assert f'Copyright (C) {answers["copyright_year"]} {answers["copyright_holder_name"]} <{answers["copyright_holder_email"]}>' in readme
             assert f'see [{license_spec["filename"]}](./{license_spec["filename"]}).' in readme
+
+
+def test_template_composer_json(copie: Copie):
+    answers = generate_copier_answers()
+    result = copie.copy(extra_answers=answers)
+
+    assert result.exit_code == 0
+    assert result.exception is None
+    assert result.project_dir.is_dir()
+    assert result.project_dir.joinpath('.editorconfig').exists()
+
+    with result.project_dir.joinpath('composer.json').open('r', encoding='utf-8') as fp:
+        composer = json.load(fp)
+
+    assert composer['name'] == f'{answers["project_vendor"]}/{answers["project_name"]}'
+    assert composer['description'] == answers['project_description']
+    assert composer['keywords'] == answers['project_keywords'].split(',')
+    assert composer['type'] == answers['project_type']
+    assert composer['prefer-stable'] == answers['composer_prefer_stable']
+    assert composer['license'] == answers['copyright_license']
+    assert composer['homepage'] == f'https://github.com/{answers["vcs_github_path"]}'
+    assert composer['support']['issues'] == f'https://github.com/{answers["vcs_github_path"]}/issues'
+    assert composer['support']['security'] == f'https://github.com/{answers["vcs_github_path"]}/security/policy'
+    assert composer['authors'] == [{'name': answers['copyright_holder_name'], 'email': answers['copyright_holder_email']}]
+    assert composer['require']['php'] == answers['php_version']
+    assert composer['autoload']['psr-4'] == {f'{answers["project_namespace"]}\\': './src/'}
+    assert composer['autoload-dev']['psr-4'] == {f'{answers["project_namespace"]}\\tests\\': './tests/'}
